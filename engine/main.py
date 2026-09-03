@@ -1,17 +1,17 @@
 import json
+from pathlib import Path
+import pandas as pd
 from calculations import calculate_monthly_cashflow, calculate_months_to_goal
 from simulation import run_simulation, check_risk_flags
 
 
 def generate_financial_twin_output(financial_data, scenario):
-    # Step 1: Current state nikalo
     monthly_cashflow = calculate_monthly_cashflow(
         financial_data["income"],
         financial_data["fixed_expenses"],
         financial_data["variable_expenses"]
     )
 
-    # Step 2: Simulation chalao
     projected_balances = run_simulation(
         current_savings=financial_data["current_savings"],
         monthly_cashflow=monthly_cashflow,
@@ -20,11 +20,10 @@ def generate_financial_twin_output(financial_data, scenario):
         months=scenario["months"]
     )
 
-    # Step 3: Risk flags nikalo
     risk_flags = check_risk_flags(projected_balances)
 
-    # Step 4: Final JSON banao
     result = {
+        "user_id": financial_data["user_id"],
         "current_balance": financial_data["current_savings"],
         "monthly_cashflow": monthly_cashflow,
         "scenario": scenario,
@@ -36,14 +35,14 @@ def generate_financial_twin_output(financial_data, scenario):
 
 
 if __name__ == "__main__":
-    sample_user = {
-        "income": 100000,
-        "fixed_expenses": 35000,
-        "variable_expenses": 20000,
-        "current_savings": 150000,
-        "savings_goal": 300000,
-        "goal_deadline_months": 12
-    }
+    # Is file (main.py) ki apni location se path banao — cwd pe depend nahi karega
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    csv_path = BASE_DIR / "data" / "datasets" / "sample_users.csv"
+
+    df = pd.read_csv(csv_path)
+
+    user_row = df[df["user_id"] == 1].iloc[0]
+    sample_user = user_row.to_dict()
 
     sample_scenario = {
         "income_change_percent": -20,
@@ -52,4 +51,4 @@ if __name__ == "__main__":
     }
 
     output = generate_financial_twin_output(sample_user, sample_scenario)
-    print(json.dumps(output, indent=2)) 
+    print(json.dumps(output, indent=2, default=str))
